@@ -4,8 +4,11 @@ from langgraph.graph import StateGraph, END
 from typing import TypedDict, List
 from langchain_google_genai import ChatGoogleGenerativeAI
 import pytz
-
+from dotenv import load_dotenv
+import os
 from combined import get_chart_details
+load_dotenv()
+
 
 # ---------------- State ----------------
 
@@ -88,7 +91,7 @@ def format_prompt(state: GraphState) -> GraphState:
 def call_gemini(state: GraphState) -> GraphState:
     llm = ChatGoogleGenerativeAI(
         model="gemini-1.5-flash",
-        google_api_key="AIzaSyC98llS8Qb1QCcMtHJV8G3NlJKQ0ujgHvI",
+        google_api_key=os.getenv("GOOGLE_API_KEY"),
         temperature=0.5
     )
     print(state)

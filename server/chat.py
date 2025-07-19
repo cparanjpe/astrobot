@@ -1,8 +1,11 @@
 import google.generativeai as genai
 from combined import get_chart_details
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
 # Configure Gemini
-genai.configure(api_key="AIzaSyC98llS8Qb1QCcMtHJV8G3NlJKQ0ujgHvI")  # OR load from os.environ
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))  # OR load from os.environ
 
 model = genai.GenerativeModel("gemini-2.5-flash")
 
