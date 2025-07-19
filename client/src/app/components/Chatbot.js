@@ -2,13 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 const ChatBot = ({ visible, setVisible, isFullView = false }) => {
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [streamingMessages, setStreamingMessages] = useState(new Set()); // Track which messages are still streaming
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -33,6 +32,7 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
     // Add a placeholder bot message for streaming
     const botMessageIndex = Date.now(); // Use timestamp as unique identifier
     setMessages(prev => [...prev, { role: "bot", text: "", id: botMessageIndex }]);
+    setStreamingMessages(prev => new Set([...prev, botMessageIndex])); // Mark as streaming
 
     try {
       const response = await fetch('http://localhost:5000/chat/stream', {
@@ -56,24 +56,47 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          // Final update to ensure we have the complete text
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === botMessageIndex
+                ? { ...msg, text: accumulatedText }
+                : msg
+            )
+          );
+          break;
+        }
 
         const chunk = decoder.decode(value);
         const lines = chunk.split('\n');
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
-            const data = line.slice(6);
+            const data = line.slice(6).trim();
             if (data === '[DONE]') {
               setIsTyping(false);
+              // Mark streaming as complete and ensure final text is saved
+              setMessages(prev =>
+                prev.map(msg =>
+                  msg.id === botMessageIndex
+                    ? { ...msg, text: accumulatedText }
+                    : msg
+                )
+              );
+              setStreamingMessages(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(botMessageIndex);
+                return newSet;
+              });
               return;
             }
-            if (data.trim()) {
+            if (data) {
               accumulatedText += data;
-              // Update the bot message with accumulated text
-              setMessages(prev => 
-                prev.map(msg => 
-                  msg.id === botMessageIndex 
+              // Update UI more frequently for better streaming experience
+              setMessages(prev =>
+                prev.map(msg =>
+                  msg.id === botMessageIndex
                     ? { ...msg, text: accumulatedText }
                     : msg
                 )
@@ -82,6 +105,7 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
           }
         }
       }
+
     } catch (e) {
       console.error('Streaming error:', e);
       // Fallback to regular API call
@@ -97,6 +121,12 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
               : msg
           )
         );
+        // Mark as not streaming
+        setStreamingMessages(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(botMessageIndex);
+          return newSet;
+        });
       } catch (fallbackError) {
         setMessages(prev => 
           prev.map(msg => 
@@ -105,6 +135,12 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
               : msg
           )
         );
+        // Mark as not streaming
+        setStreamingMessages(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(botMessageIndex);
+          return newSet;
+        });
       }
     } finally {
       setIsTyping(false);
@@ -154,50 +190,17 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
         {messages.map((msg, idx) => (
           <div key={msg.id || idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`${isFullView ? 'max-w-[70%]' : 'max-w-[80%]'} px-6 py-4 rounded-xl ${msg.role === 'user' ? 'bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 text-black' : 'bg-gray-800 text-white border border-gray-600'}`}>
-<ReactMarkdown
-  remarkPlugins={[remarkGfm]}
-  components={{
-    p: ({ node, ...props }) => (
-      <p className="mb-3 leading-relaxed" {...props} />
-    ),
-    ul: ({ node, ...props }) => (
-      <ul className="mb-3 ml-4 space-y-1" {...props} />
-    ),
-    ol: ({ node, ...props }) => (
-      <ol className="mb-3 ml-4 space-y-1" {...props} />
-    ),
-    li: ({ node, ...props }) => (
-      <li className="leading-relaxed" {...props} />
-    ),
-    code: ({ node, ...props }) => (
-      <code className="bg-gray-700 px-1 py-0.5 rounded text-sm" {...props} />
-    ),
-    pre: ({ node, ...props }) => (
-      <pre className="bg-gray-700 p-3 rounded-lg overflow-x-auto mb-3" {...props} />
-    ),
-    table: ({ node, ...props }) => (
-      <table className="w-full border-collapse border border-gray-600 mb-3 text-sm" {...props} />
-    ),
-    thead: ({ node, ...props }) => (
-      <thead className="bg-gray-700" {...props} />
-    ),
-    tbody: ({ node, ...props }) => (
-      <tbody {...props} />
-    ),
-    tr: ({ node, ...props }) => (
-      <tr className="border-b border-gray-600" {...props} />
-    ),
-    th: ({ node, ...props }) => (
-      <th className="border border-gray-600 px-3 py-2 text-left font-semibold" {...props} />
-    ),
-    td: ({ node, ...props }) => (
-      <td className="border border-gray-600 px-3 py-2" {...props} />
-    ),
-  }}
->
-  {msg.text}
-</ReactMarkdown>
-              
+              {msg.role === 'user' ? (
+                <div className="text-black font-medium">{msg.text}</div>
+              ) : (
+                // Clean, elegant plain text styling
+                <div className="text-white whitespace-pre-wrap leading-relaxed">
+                  {msg.text}
+                  {streamingMessages.has(msg.id) && (
+                    <span className="inline-block w-2 h-4 bg-yellow-400 ml-1 animate-pulse">|</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ))}
