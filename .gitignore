@@ -1,0 +1,9 @@
+# Ignore node_modules in both server and client
+__pycache__
+/client/node_modules/
+
+/.env
+/server/.env
+/client/.env
+
+/client/.next/
