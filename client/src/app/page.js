@@ -4,6 +4,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import { Calendar, Clock, MapPin, Star } from 'lucide-react';
 import mbxGeocoding from '@mapbox/mapbox-sdk/services/geocoding';
+import ChatBot from './components/Chatbot';
 
 const mapboxToken = 'pk.eyJ1IjoiY2hhaXRhbnlhLXBhcmFuanBlIiwiYSI6ImNtY3FkNTRrYjBoejcyanNiN20wcm1iNm8ifQ.0fjQBVi_N04Gx-R4awT4dw';
 const geocodingClient = mbxGeocoding({ accessToken: mapboxToken });
@@ -33,6 +34,8 @@ export default function Home() {
   const [d9Chart, setD9Chart] = useState(null);
   const [d20Chart, setD20Chart] = useState(null);
   const [selectedChart, setSelectedChart] = useState('d1');
+
+  const [currentView, setCurrentView] = useState('charts'); // 'charts' or 'chat'
 
   const handlePlaceChange = async (e) => {
     const query = e.target.value;
@@ -79,6 +82,14 @@ export default function Home() {
       setD9Chart(res.data.d9 || null);
       setD20Chart(res.data.d20 || null);
       setSelectedChart('d1');
+      // Inside handleSubmit success block
+      localStorage.setItem("astro_user_info", JSON.stringify({
+        dob, tob,
+        lat: selectedCoords.lat,
+        lon: selectedCoords.lon,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }));
+
     } catch (error) {
       console.error('API Error:', error);
       setD1Chart(null);
@@ -204,7 +215,7 @@ export default function Home() {
           </div>
         </div>
 
-        {(d1Chart || d9Chart || d20Chart) && (
+        {(d1Chart || d9Chart || d20Chart) && currentView === 'charts' && (
           <div className="flex justify-center mb-6 space-x-4">
             <button onClick={() => setSelectedChart('d1')} className={`px-6 py-2 rounded-lg font-bold ${selectedChart === 'd1' ? 'bg-yellow-500 text-black' : 'bg-white/10 text-white'}`}>D1 Chart</button>
             <button onClick={() => setSelectedChart('d9')} className={`px-6 py-2 rounded-lg font-bold ${selectedChart === 'd9' ? 'bg-yellow-500 text-black' : 'bg-white/10 text-white'}`}>D9 Chart</button>
@@ -212,29 +223,70 @@ export default function Home() {
           </div>
         )}
 
-        {selectedChart === 'd1' && d1Chart && <ChartComponent title="D1 Rashi Chart" ascendant={d1Chart.ascendant} chart={d1Chart.chart} />}
-        {selectedChart === 'd9' && d9Chart && <ChartComponent title="D9 Navamsa Chart" ascendant={d9Chart.ascendant} chart={d9Chart.chart} />}
-        {selectedChart === 'd20' && d20Chart && <ChartComponent title="D20 Vimsamsa Chart" ascendant={d20Chart.ascendant} chart={d20Chart.chart} />}
+        {currentView === 'charts' && (
+          <>
+            {selectedChart === 'd1' && d1Chart && <ChartComponent title="D1 Rashi Chart" ascendant={d1Chart.ascendant} chart={d1Chart.chart} />}
+            {selectedChart === 'd9' && d9Chart && <ChartComponent title="D9 Navamsa Chart" ascendant={d9Chart.ascendant} chart={d9Chart.chart} />}
+            {selectedChart === 'd20' && d20Chart && <ChartComponent title="D20 Vimsamsa Chart" ascendant={d20Chart.ascendant} chart={d20Chart.chart} />}
+          </>
+        )}
+
+        {currentView === 'chat' && (
+          <div className="bg-white/10 rounded-3xl shadow-2xl backdrop-blur-md border border-white/20 min-h-[600px] flex flex-col">
+            <div className="p-6 border-b border-white/20 flex justify-between items-center">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+                🔮 AstroBot Chat
+              </h2>
+              <button 
+                onClick={() => setCurrentView('charts')}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold hover:scale-105 transition-all"
+              >
+                Back to Charts
+              </button>
+            </div>
+            <div className="flex-1 p-6">
+              <ChatBot visible={true} setVisible={() => {}} isFullView={true} />
+            </div>
+          </div>
+        )}
       </div>
-      <div className="mt-8 bg-white/5 rounded-2xl p-6">
-              <h3 className="text-xl font-bold text-yellow-300 mb-4 text-center">Planet Legend</h3>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {Object.entries(planetIcons).map(([planet, icon]) => (
-                  <div key={planet} className="flex items-center justify-center bg-white/10 rounded-lg p-3">
-                    <span className={`text-2xl mr-2 ${planetColors[planet] || 'text-white'}`}>
-                      {icon}
-                    </span>
-                    <span className="text-sm text-gray-300">{planet}</span>
-                  </div>
-                ))}
+      
+      {/* Switch to Chat Button - Show after charts are generated */}
+      {(d1Chart || d9Chart || d20Chart) && currentView === 'charts' && (
+        <div className="text-center mt-8 mb-8">
+          <button
+            onClick={() => setCurrentView('chat')}
+            className="px-8 py-4 rounded-xl bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 text-black font-bold text-lg hover:scale-105 transition-all shadow-xl"
+          >
+            💬 Chat with AstroBot
+          </button>
+        </div>
+      )}
+      
+      {/* Only show planet legend in charts view */}
+      {currentView === 'charts' && (
+        <div className="mt-8 bg-white/5 rounded-2xl p-6">
+          <h3 className="text-xl font-bold text-yellow-300 mb-4 text-center">Planet Legend</h3>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {Object.entries(planetIcons).map(([planet, icon]) => (
+              <div key={planet} className="flex items-center justify-center bg-white/10 rounded-lg p-3">
+                <span className={`text-2xl mr-2 ${planetColors[planet] || 'text-white'}`}>
+                  {icon}
+                </span>
+                <span className="text-sm text-gray-300">{planet}</span>
               </div>
-      </div>
+            ))}
+          </div>
+        </div>
+      )}
+       
        {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-gray-400 text-sm">
             ✨ Powered by ancient Vedic wisdom and modern technology ✨
           </p>
-        </div>     
+        </div>  
+
     </main>
   );
 }

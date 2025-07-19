@@ -45,6 +45,8 @@ def determine_required_charts(user_question: str):
     if any(keyword in question for keyword in d20_keywords):
         charts.append('D20')
 
+    print(f"seelected charts: {charts}")
+
     return charts
 
 
@@ -125,8 +127,60 @@ Chart Data:
 Please answer clearly and concisely in astrological terms. contemplate and answer.
 """
 
-    # Step 6: Call Gemini
+    # Step 6: Call Gemini with streaming
     # print("prompt to gemini-->",prompt)
-    response = model.generate_content(prompt)
-    return response.text
+    response = model.generate_content(prompt, stream=True)
+    
+    # Collect all chunks and return the complete response
+    full_response = ""
+    for chunk in response:
+        if chunk.text:
+            full_response += chunk.text
+    
+    return full_response
+
+# Streaming version of the analyze function
+def analyze_user_question_stream(dob, tob, timezone, lat, lon, question):
+    # Step 1: Get UTC datetime
+    from datetime import datetime
+    import pytz
+
+    dt_local = datetime.strptime(f"{dob} {tob}", "%Y-%m-%d %H:%M")
+    local_tz = pytz.timezone(timezone)
+    dt_localized = local_tz.localize(dt_local)
+    birth_utc = dt_localized.astimezone(pytz.utc)
+
+    # Step 2: Get chart data
+    full_chart_data = get_chart_details(birth_utc, lat, lon)
+
+    # Step 3: Determine which charts to use
+    charts_needed = determine_required_charts(question)
+
+    # Step 4: Format chart data
+    chart_text = format_chart_for_llm(full_chart_data, charts_needed)
+
+    # Step 5: Generate prompt
+    prompt = f"""You are a learned Vedic astrologer. A user has provided their birth chart data.
+Use the data below to answer their question.
+
+User Question:
+"{question}"
+
+Date of Birth: {dob}
+Time of Birth: {tob}
+Location: lat={lat}, lon={lon}, Timezone={timezone}
+
+Chart Data:
+{chart_text}
+
+Please answer clearly and concisely in astrological terms. contemplate and answer.
+"""
+
+    # Step 6: Call Gemini with streaming
+    response = model.generate_content(prompt, stream=True)
+    
+    # Yield each chunk as it arrives
+    for chunk in response:
+        if chunk.text:
+            yield chunk.text
   

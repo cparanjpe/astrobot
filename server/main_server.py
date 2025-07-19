@@ -35,7 +35,7 @@ def charts():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-from chat import analyze_user_question
+from chat import analyze_user_question, analyze_user_question_stream
 
 @app.route("/chat", methods=["POST"])
 def astrology_chat():
@@ -50,6 +50,27 @@ def astrology_chat():
 
         result = analyze_user_question(dob, tob, timezone, lat, lon, question)
         return jsonify({"response": result})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/chat/stream", methods=["POST"])
+def astrology_chat_stream():
+    try:
+        data = request.json
+        dob = data["dob"]
+        tob = data["tob"]
+        timezone = data.get("timezone", "Asia/Kolkata")
+        lat = data["lat"]
+        lon = data["lon"]
+        question = data["question"]
+
+        def generate():
+            for chunk in analyze_user_question_stream(dob, tob, timezone, lat, lon, question):
+                yield f"data: {chunk}\n\n"
+            yield "data: [DONE]\n\n"
+
+        return app.response_class(generate(), mimetype='text/plain')
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500   
