@@ -35,7 +35,7 @@ def charts():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-from chat import analyze_user_question, analyze_user_question_stream
+from chat import analyze_user_question, analyze_user_question_stream, generate_next_questions
 
 @app.route("/chat", methods=["POST"])
 def astrology_chat():
@@ -81,19 +81,7 @@ def next_questions():
         data = request.get_json()
         current_question = data.get("question", "")
 
-        # Simulate LLM call to generate next set of questions
-        # Replace this with an actual LLM API call in production
-        similar_questions = [
-            f"Can you elaborate on {current_question}?",
-            f"What are the implications of {current_question}?"
-        ]
-        different_questions = [
-            "What does my moon sign mean?",
-            "How can I improve my financial prospects?"
-        ]
-
-        # Combine similar and different questions
-        next_questions = similar_questions + different_questions
+        next_questions = generate_next_questions(current_question)
 
         return jsonify({"questions": next_questions})
 

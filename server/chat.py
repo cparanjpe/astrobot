@@ -193,9 +193,9 @@ def generate_next_questions(current_question):
     """
     try:
         # Simulate LLM call using Google Generative AI
-        prompt = f"Based on the question '{current_question}', suggest 2-3 similar questions and 2-3 different questions."
-        response = model.generate_text(prompt=prompt)
-
+        prompt = f"Based on the question given to a vedic astrology chatbot suggest additional questions(user could ask so they dont have to type it out).Additional questions can be followups,etc. Question: '{current_question}'. Suggest 4 questions and one from different category so user has a little variety.RESPONSE SHOULD BE A STRING WITH QUESTIONS SEPARATED BY NEWLINE(\n)"
+        response = model.generate_content(prompt)
+        print(response.text)
         # Parse the response to extract questions (assuming response is a string with questions separated by newlines)
         questions = response.text.split("\n")
         return [q.strip() for q in questions if q.strip()]

@@ -31,7 +31,7 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
       const response = await axios.post('http://localhost:5000/chat/next-questions', {
         question: currentQuestion
       });
-      if (response.data && response.data.questions) {
+      if (response.data && response.data.questions && Array.isArray(response.data.questions) && response.data.questions.length > 0) {
         setPredefinedQuestions(response.data.questions);
       }
     } catch (error) {
@@ -49,6 +49,9 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
     const currentQuestion = question;
     setQuestion('');
     setIsTyping(true);
+
+    // Fetch next questions immediately since it doesn't depend on the response
+    fetchNextQuestions(currentQuestion);
 
     // Add a placeholder bot message for streaming
     const botMessageIndex = Date.now(); // Use timestamp as unique identifier
@@ -110,7 +113,6 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
                 newSet.delete(botMessageIndex);
                 return newSet;
               });
-              fetchNextQuestions(currentQuestion); // Fetch next questions
               return;
             }
             if (data) {
@@ -149,7 +151,6 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
           newSet.delete(botMessageIndex);
           return newSet;
         });
-        fetchNextQuestions(currentQuestion); // Fetch next questions
       } catch (fallbackError) {
         setMessages(prev => 
           prev.map(msg => 
@@ -175,7 +176,7 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
   // Typing animation component
   const TypingIndicator = () => (
     <div className="flex justify-start">
-      <div className={`${isFullView ? 'max-w-[70%]' : 'max-w-[80%]'} px-4 py-3 rounded-xl bg-gray-800 text-white border border-gray-600`}>
+      <div className={`${isFullView ? 'max-w-[70%]' : 'max-w-[80%]'} px-4 py-3 rounded-lg bg-gray-800 text-white border border-gray-600`}>
         <div className="flex space-x-1">
           <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
           <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
@@ -186,41 +187,41 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
   );
 
   const containerClass = isFullView 
-    ? "w-full h-[600px] flex flex-col bg-white/5 rounded-2xl border border-white/20"
-    : "fixed bottom-20 right-6 w-[360px] h-[500px] bg-black/90 border border-yellow-500 rounded-2xl shadow-2xl flex flex-col z-50";
+    ? "w-full h-[600px] flex flex-col bg-white/5 rounded-xl border border-white/20"
+    : "fixed bottom-20 right-6 w-[360px] h-[500px] bg-black/90 border border-yellow-500 rounded-xl shadow-2xl flex flex-col z-50";
 
   const headerClass = isFullView
-    ? "p-6 border-b border-white/20 flex justify-between items-center"
+    ? "p-5 border-b border-white/20 flex justify-between items-center"
     : "p-4 border-b border-yellow-400 flex justify-between items-center";
 
   return (
     <div className={containerClass}>
       {!isFullView && (
         <div className={headerClass}>
-          <span className="text-yellow-300 font-bold text-lg">🔮 AstroBot</span>
-          <button onClick={() => setVisible(false)} className="text-yellow-300 hover:text-red-400 text-xl">&times;</button>
+          <span className="text-yellow-300 font-semibold text-base">🔮 AstroBot</span>
+          <button onClick={() => setVisible(false)} className="text-yellow-300 hover:text-red-400 text-lg transition-colors duration-200">&times;</button>
         </div>
       )}
 
-      <div className={`${isFullView ? 'p-6' : 'p-4'} overflow-y-auto flex-1 space-y-4 min-h-0`}>
+      <div className={`${isFullView ? 'p-5' : 'p-4'} overflow-y-auto flex-1 space-y-3 min-h-0`}>
         {messages.length === 0 && !isTyping && (
-          <div className="text-center text-gray-400 py-8">
-            <div className="text-4xl mb-4">🔮</div>
-            <p>Welcome to AstroBot! Ask me anything about your astrological chart.</p>
-            <p className="text-sm mt-2">Try asking: "What does my sun sign mean?" or "Tell me about my career prospects"</p>
+          <div className="text-center text-gray-400 py-6">
+            <div className="text-3xl mb-3">🔮</div>
+            <p className="text-sm">Welcome to AstroBot! Ask me anything about your astrological chart.</p>
+            <p className="text-xs mt-2 opacity-75">Try asking: "What does my sun sign mean?" or "Tell me about my career prospects"</p>
           </div>
         )}
         {messages.map((msg, idx) => (
           <div key={msg.id || idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`${isFullView ? 'max-w-[70%]' : 'max-w-[80%]'} px-6 py-4 rounded-xl ${msg.role === 'user' ? 'bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 text-black' : 'bg-gray-800 text-white border border-gray-600'}`}>
+            <div className={`${isFullView ? 'max-w-[70%]' : 'max-w-[80%]'} px-4 py-3 rounded-lg ${msg.role === 'user' ? 'bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 text-black' : 'bg-gray-800 text-white border border-gray-600'}`}>
               {msg.role === 'user' ? (
-                <div className="text-black font-medium">{msg.text}</div>
+                <div className="text-black font-medium text-sm">{msg.text}</div>
               ) : (
                 // Clean, elegant plain text styling
-                <div className="text-white whitespace-pre-wrap leading-relaxed">
+                <div className="text-white whitespace-pre-wrap leading-relaxed text-sm">
                   {msg.text}
                   {streamingMessages.has(msg.id) && (
-                    <span className="inline-block w-2 h-4 bg-yellow-400 ml-1 animate-pulse">|</span>
+                    <span className="inline-block w-1.5 h-3 bg-yellow-400 ml-1 animate-pulse">|</span>
                   )}
                 </div>
               )}
@@ -231,25 +232,24 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className={`${isFullView ? 'p-6 border-t border-white/20' : 'p-4 border-t border-yellow-400'} flex-shrink-0`}>        
+      <div className={`${isFullView ? 'p-5 border-t border-white/20' : 'p-4 border-t border-yellow-400'} flex-shrink-0`}>        
         {predefinedQuestions.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-2 justify-center text-xs">
+          <div className="flex flex-wrap gap-2 mb-3 justify-center">
             {predefinedQuestions.map((q, idx) => (
-              <div
+              <button
                 key={idx}
-                className="cursor-pointer bg-transparent text-white px-4 py-2 rounded-lg border-2 border-orange-500 hover:scale-105 transition-transform"
-                style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+                className="cursor-pointer bg-transparent text-white px-3 py-1.5 rounded-lg border border-orange-500/60 hover:border-orange-400 hover:bg-orange-500/10 transition-all duration-200 text-xs transform hover:-translate-y-0.5"
                 onClick={() => setQuestion(q)}
               >
                 {q}
-              </div>
+              </button>
             ))}
           </div>
         )}
         <div className="flex space-x-2">
           <input
             type="text"
-            className={`flex-1 ${isFullView ? 'bg-white/10 text-white p-4' : 'bg-white/10 text-white p-3'} rounded-xl focus:ring-2 focus:ring-yellow-400 border border-white/20 ${isTyping ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`flex-1 ${isFullView ? 'bg-white/10 text-white p-3' : 'bg-white/10 text-white p-3'} rounded-lg focus:ring-2 focus:ring-orange-400 border border-white/20 focus:border-orange-400 transition-all duration-200 text-sm ${isTyping ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/15'}`}
             placeholder={isTyping ? "AstroBot is typing..." : "Ask your question..."}
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
@@ -259,10 +259,10 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
           <button
             onClick={handleAsk}
             disabled={isTyping || !question.trim()}
-            className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+            className={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 ${
               isTyping || !question.trim() 
                 ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 text-black hover:scale-105'
+                : 'bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 text-black hover:from-yellow-300 hover:via-pink-300 hover:to-purple-300 transform hover:-translate-y-0.5 shadow-md hover:shadow-lg'
             }`}
           >
             {isTyping ? '...' : 'Send'}
