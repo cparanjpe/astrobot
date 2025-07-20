@@ -186,4 +186,20 @@ Please answer clearly and concisely in astrological terms. contemplate and answe
     for chunk in response:
         if chunk.text:
             yield chunk.text
-  
+
+def generate_next_questions(current_question):
+    """
+    Calls the LLM to generate the next set of relevant questions.
+    """
+    try:
+        # Simulate LLM call using Google Generative AI
+        prompt = f"Based on the question '{current_question}', suggest 2-3 similar questions and 2-3 different questions."
+        response = model.generate_text(prompt=prompt)
+
+        # Parse the response to extract questions (assuming response is a string with questions separated by newlines)
+        questions = response.text.split("\n")
+        return [q.strip() for q in questions if q.strip()]
+
+    except Exception as e:
+        print(f"Error generating next questions: {e}")
+        return []

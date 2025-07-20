@@ -7,7 +7,15 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [streamingMessages, setStreamingMessages] = useState(new Set()); // Track which messages are still streaming
+  const [streamingMessages, setStreamingMessages] = useState(new Set());
+  const [predefinedQuestions, setPredefinedQuestions] = useState([
+    "What does my sun sign mean?",
+    "Tell me about my career prospects",
+    "What are my strengths based on my chart?",
+    "What challenges might I face?",
+    "How can I improve my relationships?"
+  ]);
+
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -17,6 +25,19 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
+
+  const fetchNextQuestions = async (currentQuestion) => {
+    try {
+      const response = await axios.post('http://localhost:5000/chat/next-questions', {
+        question: currentQuestion
+      });
+      if (response.data && response.data.questions) {
+        setPredefinedQuestions(response.data.questions);
+      }
+    } catch (error) {
+      console.error('Error fetching next questions:', error);
+    }
+  };
 
   const handleAsk = async () => {
     const userInfo = JSON.parse(localStorage.getItem("astro_user_info"));
@@ -89,6 +110,7 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
                 newSet.delete(botMessageIndex);
                 return newSet;
               });
+              fetchNextQuestions(currentQuestion); // Fetch next questions
               return;
             }
             if (data) {
@@ -127,6 +149,7 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
           newSet.delete(botMessageIndex);
           return newSet;
         });
+        fetchNextQuestions(currentQuestion); // Fetch next questions
       } catch (fallbackError) {
         setMessages(prev => 
           prev.map(msg => 
@@ -208,7 +231,21 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className={`${isFullView ? 'p-6 border-t border-white/20' : 'p-4 border-t border-yellow-400'} flex-shrink-0`}>
+      <div className={`${isFullView ? 'p-6 border-t border-white/20' : 'p-4 border-t border-yellow-400'} flex-shrink-0`}>        
+        {predefinedQuestions.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2 justify-center text-xs">
+            {predefinedQuestions.map((q, idx) => (
+              <div
+                key={idx}
+                className="cursor-pointer bg-transparent text-white px-4 py-2 rounded-lg border-2 border-orange-500 hover:scale-105 transition-transform"
+                style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+                onClick={() => setQuestion(q)}
+              >
+                {q}
+              </div>
+            ))}
+          </div>
+        )}
         <div className="flex space-x-2">
           <input
             type="text"

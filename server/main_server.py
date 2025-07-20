@@ -75,5 +75,30 @@ def astrology_chat_stream():
     except Exception as e:
         return jsonify({"error": str(e)}), 500   
 
+@app.route("/chat/next-questions", methods=["POST"])
+def next_questions():
+    try:
+        data = request.get_json()
+        current_question = data.get("question", "")
+
+        # Simulate LLM call to generate next set of questions
+        # Replace this with an actual LLM API call in production
+        similar_questions = [
+            f"Can you elaborate on {current_question}?",
+            f"What are the implications of {current_question}?"
+        ]
+        different_questions = [
+            "What does my moon sign mean?",
+            "How can I improve my financial prospects?"
+        ]
+
+        # Combine similar and different questions
+        next_questions = similar_questions + different_questions
+
+        return jsonify({"questions": next_questions})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(debug=True)
