@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 const ChatBot = ({ visible, setVisible, isFullView = false }) => {
   const [question, setQuestion] = useState('');
@@ -173,128 +171,188 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
     }
   };
 
-  const exportToPDF = async () => {
+  const exportToHTML = async () => {
     if (messages.length === 0) {
       alert("No conversation to export!");
       return;
     }
 
     try {
-      // Create a temporary div with the chat messages styled for PDF
-      const tempDiv = document.createElement('div');
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
-      tempDiv.style.top = '0';
-      tempDiv.style.width = '800px';
-      tempDiv.style.fontFamily = 'Arial, sans-serif';
-      tempDiv.style.backgroundColor = '#1f2937';
-      tempDiv.style.color = '#ffffff';
-      tempDiv.style.padding = '40px';
-      tempDiv.style.borderRadius = '12px';
+      const timestamp = new Date().toLocaleDateString();
+      const fileName = `astrobot-conversation-${new Date().toISOString().replace(/[:.]/g, '-').split('T')[0]}.html`;
 
-      // Header
-      const header = document.createElement('div');
-      header.style.textAlign = 'center';
-      header.style.marginBottom = '30px';
-      header.style.borderBottom = '2px solid #f59e0b';
-      header.style.paddingBottom = '20px';
-      header.innerHTML = `
-        <h1 style="font-size: 32px; margin: 0; color: #f59e0b; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">🔮 AstroBot Conversation</h1>
-        <p style="font-size: 16px; margin: 10px 0 0 0; color: #d1d5db;">Exported on ${new Date().toLocaleDateString()}</p>
-      `;
-      tempDiv.appendChild(header);
-
-      // Messages container
-      const messagesContainer = document.createElement('div');
-      messagesContainer.style.marginTop = '20px';
-
-      messages.forEach((msg, idx) => {
-        const messageDiv = document.createElement('div');
-        messageDiv.style.marginBottom = '20px';
-        messageDiv.style.display = 'flex';
-        messageDiv.style.justifyContent = msg.role === 'user' ? 'flex-end' : 'flex-start';
-
-        const messageContent = document.createElement('div');
-        messageContent.style.maxWidth = '70%';
-        messageContent.style.padding = '16px 20px';
-        messageContent.style.borderRadius = '12px';
-        messageContent.style.fontSize = '14px';
-        messageContent.style.lineHeight = '1.6';
-        messageContent.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-
-        if (msg.role === 'user') {
-          messageContent.style.background = 'linear-gradient(135deg, #fbbf24, #ec4899, #8b5cf6)';
-          messageContent.style.color = '#000000';
-          messageContent.style.fontWeight = '600';
-          messageContent.innerHTML = `<strong>You:</strong><br/>${msg.text}`;
-        } else {
-          messageContent.style.backgroundColor = '#374151';
-          messageContent.style.color = '#ffffff';
-          messageContent.style.border = '1px solid #4b5563';
-          messageContent.innerHTML = `<strong style="color: #f59e0b;">🔮 AstroBot:</strong><br/>${msg.text.replace(/\n/g, '<br/>')}`;
+      // Create the HTML content
+      const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AstroBot Conversation - ${timestamp}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(31, 41, 55, 0.9);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #f59e0b;
+            padding-bottom: 20px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #f59e0b;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            font-weight: 700;
+        }
+        
+        .header p {
+            color: #d1d5db;
+            font-size: 1.1rem;
+        }
+        
+        .messages {
+            margin: 30px 0;
+        }
+        
+        .message {
+            margin-bottom: 24px;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .message.user {
+            justify-content: flex-end;
+        }
+        
+        .message.bot {
+            justify-content: flex-start;
+        }
+        
+        .message-content {
+            max-width: 75%;
+            padding: 16px 20px;
+            border-radius: 16px;
+            font-size: 15px;
+            line-height: 1.6;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .message.user .message-content {
+            background: linear-gradient(135deg, #fbbf24, #ec4899, #8b5cf6);
+            color: #000000;
+            font-weight: 600;
+            border-radius: 16px 16px 4px 16px;
+        }
+        
+        .message.bot .message-content {
+            background-color: #374151;
+            color: #ffffff;
+            border: 1px solid #4b5563;
+            border-radius: 16px 16px 16px 4px;
+        }
+        
+        .message-label {
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .bot .message-label {
+            color: #f59e0b;
+        }
+        
+        .message-text {
+            white-space: pre-wrap;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            border-top: 1px solid #4b5563;
+            padding-top: 20px;
+            font-size: 14px;
+            color: #9ca3af;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .message-content {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔮 AstroBot Conversation</h1>
+            <p>Exported on ${timestamp}</p>
+        </div>
+        
+        <div class="messages">
+            ${messages.map(msg => `
+                <div class="message ${msg.role}">
+                    <div class="message-content">
+                        <span class="message-label">${msg.role === 'user' ? 'You:' : '🔮 AstroBot:'}</span>
+                        <div class="message-text">${msg.text.replace(/\n/g, '<br>')}</div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        
+        <div class="footer">
+            Generated by AstroBot - Your Personal Astrology Assistant
+        </div>
+    </div>
+</body>
+</html>`;
 
-        messageDiv.appendChild(messageContent);
-        messagesContainer.appendChild(messageDiv);
-      });
-
-      tempDiv.appendChild(messagesContainer);
-
-      // Footer
-      const footer = document.createElement('div');
-      footer.style.marginTop = '40px';
-      footer.style.textAlign = 'center';
-      footer.style.borderTop = '1px solid #4b5563';
-      footer.style.paddingTop = '20px';
-      footer.style.fontSize = '12px';
-      footer.style.color = '#9ca3af';
-      footer.innerHTML = `Generated by AstroBot - Your Personal Astrology Assistant`;
-      tempDiv.appendChild(footer);
-
-      document.body.appendChild(tempDiv);
-
-      // Convert to canvas and then to PDF
-      const canvas = await html2canvas(tempDiv, {
-        backgroundColor: '#1f2937',
-        scale: 2,
-        useCORS: true,
-        allowTaint: true
-      });
-
-      document.body.removeChild(tempDiv);
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 0;
-
-      // If content is too tall, we might need multiple pages
-      const pageHeight = imgHeight * ratio;
-      let heightLeft = pageHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, pageHeight);
-      heightLeft -= pdfHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - pageHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, pageHeight);
-        heightLeft -= pdfHeight;
-      }
-
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
-      pdf.save(`astrobot-conversation-${timestamp}.pdf`);
+      // Create and download the HTML file
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Failed to generate PDF. Please try again.');
+      console.error('Error generating HTML:', error);
+      alert('Failed to generate HTML file. Please try again.');
     }
   };
 
@@ -384,11 +442,11 @@ const ChatBot = ({ visible, setVisible, isFullView = false }) => {
             disabled={isTyping}
           />
           
-          {/* Export PDF Button */}
+          {/* Export HTML Button */}
           <button
-            onClick={exportToPDF}
+            onClick={exportToHTML}
             disabled={messages.length === 0}
-            title="Export conversation"
+            title="Export conversation as HTML"
             className={`px-3 py-3 rounded-lg font-medium text-sm transition-all duration-200 ${
               messages.length === 0
                 ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
