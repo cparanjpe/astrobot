@@ -31,6 +31,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
 
   const [d1Chart, setD1Chart] = useState(null);
+  const [d7Chart, setD7Chart] = useState(null);
   const [d9Chart, setD9Chart] = useState(null);
   const [d20Chart, setD20Chart] = useState(null);
   const [selectedChart, setSelectedChart] = useState('d1');
@@ -79,6 +80,7 @@ export default function Home() {
       });
 
       setD1Chart(res.data.d1 || null);
+      setD7Chart(res.data.d7 || null);
       setD9Chart(res.data.d9 || null);
       setD20Chart(res.data.d20 || null);
       setSelectedChart('d1');
@@ -93,6 +95,7 @@ export default function Home() {
     } catch (error) {
       console.error('API Error:', error);
       setD1Chart(null);
+      setD7Chart(null);
       setD9Chart(null);
       setD20Chart(null);
     } finally {
@@ -256,45 +259,64 @@ export default function Home() {
           </div>
         )}
 
-        {(d1Chart || d9Chart || d20Chart) && currentView === 'charts' && (
-          <div className="flex justify-center mb-6 space-x-3 animate-fade-in">
-            <button 
-              onClick={() => setSelectedChart('d1')} 
+      {(d1Chart || d7Chart || d9Chart || d20Chart) && currentView === 'charts' && (
+        <div className="flex justify-center mb-6 space-x-3 animate-fade-in">
+          {d1Chart && (
+            <button
+              onClick={() => setSelectedChart('d1')}
               className={`px-5 py-2 rounded-lg font-medium text-sm transition-all duration-200 transform hover:-translate-y-0.5 ${
-                selectedChart === 'd1' 
-                  ? 'bg-yellow-500 text-black shadow-lg' 
+                selectedChart === 'd1'
+                  ? 'bg-yellow-500 text-black shadow-lg'
                   : 'bg-white/10 text-white hover:bg-white/20 border border-white/20 hover:border-white/40'
               }`}
             >
               D1 Chart
             </button>
-            <button 
-              onClick={() => setSelectedChart('d9')} 
+          )}
+          {d7Chart && (
+            <button
+              onClick={() => setSelectedChart('d7')}
               className={`px-5 py-2 rounded-lg font-medium text-sm transition-all duration-200 transform hover:-translate-y-0.5 ${
-                selectedChart === 'd9' 
-                  ? 'bg-yellow-500 text-black shadow-lg' 
+                selectedChart === 'd7'
+                  ? 'bg-yellow-500 text-black shadow-lg'
+                  : 'bg-white/10 text-white hover:bg-white/20 border border-white/20 hover:border-white/40'
+              }`}
+            >
+              D7 Chart
+            </button>
+          )}
+          {d9Chart && (
+            <button
+              onClick={() => setSelectedChart('d9')}
+              className={`px-5 py-2 rounded-lg font-medium text-sm transition-all duration-200 transform hover:-translate-y-0.5 ${
+                selectedChart === 'd9'
+                  ? 'bg-yellow-500 text-black shadow-lg'
                   : 'bg-white/10 text-white hover:bg-white/20 border border-white/20 hover:border-white/40'
               }`}
             >
               D9 Chart
             </button>
-            <button 
-              onClick={() => setSelectedChart('d20')} 
+          )}
+          {d20Chart && (
+            <button
+              onClick={() => setSelectedChart('d20')}
               className={`px-5 py-2 rounded-lg font-medium text-sm transition-all duration-200 transform hover:-translate-y-0.5 ${
-                selectedChart === 'd20' 
-                  ? 'bg-yellow-500 text-black shadow-lg' 
+                selectedChart === 'd20'
+                  ? 'bg-yellow-500 text-black shadow-lg'
                   : 'bg-white/10 text-white hover:bg-white/20 border border-white/20 hover:border-white/40'
               }`}
             >
               D20 Chart
             </button>
-          </div>
-        )}
+          )}
+        </div>
+      )}
 
         {currentView === 'charts' && (
           <>
             {selectedChart === 'd1' && d1Chart && <ChartComponent title="D1 Rashi Chart" ascendant={d1Chart.ascendant} chart={d1Chart.chart} />}
             {selectedChart === 'd9' && d9Chart && <ChartComponent title="D9 Navamsa Chart" ascendant={d9Chart.ascendant} chart={d9Chart.chart} />}
+            {selectedChart === 'd7' && d7Chart && <ChartComponent title="D7 Saptamsa Chart" ascendant={d7Chart.ascendant} chart={d7Chart.chart} />}            
             {selectedChart === 'd20' && d20Chart && <ChartComponent title="D20 Vimsamsa Chart" ascendant={d20Chart.ascendant} chart={d20Chart.chart} />}
           </>
         )}

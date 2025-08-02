@@ -64,6 +64,13 @@ def get_nakshatra(lon):
     pada = int(deg_in_nak // (nak_len / 4)) + 1  # Padas 1 to 4
     return NAKSHATRAS[index], deg_in_nak, pada
 
+def get_saptamsa_sign(lon):
+    sign = int(lon // 30)
+    deg_in_sign = lon % 30
+    saptamsa_div = int(deg_in_sign // (30 / 7))  # 0 to 6
+    saptamsa_sign = (sign * 7 + saptamsa_div) % 12
+
+    return saptamsa_sign
 def get_navamsa_sign(lon):
     sign = int(lon // 30)
     deg_in_sign = lon % 30
@@ -117,6 +124,28 @@ def get_chart_details(birth_utc,lat,lon):
         sign = ZODIAC_SIGNS[house_signs_d1[i]]
         planets = ', '.join(house_chart_d1[i + 1]) or '—'
         print(f"House {i+1:2} ({sign}): {planets}")
+
+    # ===== D-7 CHART =====
+    d7_lagna_sign = get_saptamsa_sign(d1_lagna_deg)
+    house_signs_d7 = [(d7_lagna_sign + i) % 12 for i in range(12)]
+    house_chart_d7 = {i + 1: [] for i in range(12)}
+    house_chart_d7[1].append('Ascendant')
+
+    # Place planets in D7
+    for planet, lon in planet_positions.items():
+        saptamsa_sign = get_saptamsa_sign(lon)
+        relative_house = ((saptamsa_sign - d7_lagna_sign) % 12) + 1
+        house_chart_d7[relative_house].append(planet)
+
+    print(f"\n🕉️ D-7 Saptamsa Chart (Derived from same birth details)")
+    print(f"Ascendant: {ZODIAC_SIGNS[d7_lagna_sign]} Saptamsa")
+    print("== D-7 Houses ==")
+    for i in range(12):
+        sign = ZODIAC_SIGNS[house_signs_d7[i]]
+        planets = ', '.join(house_chart_d7[i + 1]) or '—'
+        print(f"House {i+1:2} ({sign} Saptamsa): {planets}")
+
+
 
     # ===== D-9 CHART =====
     d9_lagna_sign = get_navamsa_sign(d1_lagna_deg)
@@ -202,6 +231,10 @@ def get_chart_details(birth_utc,lat,lon):
     # ===== CALL FOR D1 =====
     d1_lords = get_house_lords("D-1 Rāśi Chart", house_signs_d1, house_chart_d1)
 
+    # ===== CALL FOR D7 House Lords =====
+    d7_lords = get_house_lords("D-7 Saptamsa Chart", house_signs_d7, house_chart_d7)
+
+
     # ===== CALL FOR D9 =====
     d9_lords = get_house_lords("D-9 Navamsa Chart", house_signs_d9, house_chart_d9)
 
@@ -211,5 +244,6 @@ def get_chart_details(birth_utc,lat,lon):
             "d1": {"ascendant": ZODIAC_SIGNS[d1_lagna_sign], "chart": house_chart_d1, "lords": d1_lords},
             "d9": {"ascendant": ZODIAC_SIGNS[d9_lagna_sign], "chart": house_chart_d9, "lords": d9_lords},
             "d20": {"ascendant": ZODIAC_SIGNS[d20_lagna_sign], "chart": house_chart_d20, "lords": d20_lords},
+             "d7": {"ascendant": ZODIAC_SIGNS[d7_lagna_sign], "chart": house_chart_d7, "lords": d7_lords},
             "planets": planet_positions_data
         }

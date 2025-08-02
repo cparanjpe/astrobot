@@ -14,6 +14,22 @@ def determine_required_charts(user_question: str):
     question = user_question.lower()
     charts = ['D1']  # Always include D1
 
+    # D7 - Saptamsa Chart - Children
+    d7_keywords = [
+        # Correct terms
+        "children", "child", "offspring", "progeny", "kids", "parenting", "parenthood",
+        "birth", "pregnancy", "fertility", "procreation", "family", "lineage", "descendants",
+        "son", "daughter", "childbirth", "nurturing", "raising children", "parental",
+        # Misspellings  
+        "childen", "offsprings", "progeny", "kid", "paranting", "parenthod", "fertillity",
+        "procreatoin", "familly", "lineagee", "descendents", "sonn", "daugter", "childbrith",
+        "nurturingg", "raisingg children", "parental"
+        # Indian usage
+        "saptamsa", "saptamsha", "putra", "putri", "santaan", "santan", "santati", "santati chart",
+        "putra karaka", "putra bhava", "saptamsa chart","d7"
+
+    ]
+
     # D9 - Marriage, Relationships
     d9_keywords = [
         # Correct terms
@@ -25,7 +41,7 @@ def determine_required_charts(user_question: str):
         "romence", "romatic", "compability", "compatiblity", "mathcmaking",
         "boyfreind", "girfreind", "gurlfriend", "bf", "gf", "dateing",
         # Indian usage
-        "shaadi", "vivah", "rishta", "kundli match", "kundli milan", "lagan", "mangal dosha"
+        "shaadi", "vivah", "rishta", "kundli match", "kundli milan", "lagan", "mangal dosha","d9"
     ]
 
     # D20 - Spiritual Growth
@@ -40,9 +56,12 @@ def determine_required_charts(user_question: str):
         "medatation", "mediation", "mediatation", "spiritulity", "transendance", "sadhna",
         "karma yoga", "dian", "samadi", "enlightnment", "soull", "bhakthi", "gnana",
         # Slang or common modern phrasing
-        "soul searching", "finding myself", "purpose", "life path", "destiny", "divine"
+        "soul searching", "finding myself", "purpose", "life path", "destiny", "divine","d20"
     ]
 
+    # Check for keywords in the question
+    if any(keyword in question for keyword in d7_keywords):
+        charts.append('D7')
     if any(keyword in question for keyword in d9_keywords):
         charts.append('D9')
     if any(keyword in question for keyword in d20_keywords):
